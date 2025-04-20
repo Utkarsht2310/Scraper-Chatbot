@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Web Scraper & Chatbot</title>
+</head>
+<body>
+    <h1>Web Scraper with Chatbot</h1>
+    
+    <!-- Scraping Form -->
+    <form id="scrape-form">
+        <label for="url">Enter Base URL:</label>
+        <input type="text" id="url" name="url" required>
+        <div>
+            <label>Select Categories:</label><br>
+            <input type="checkbox" id="category1" name="categories" value="category1"> Category 1<br>
+            <input type="checkbox" id="category2" name="categories" value="category2"> Category 2<br>
+            <input type="checkbox" id="category3" name="categories" value="category3"> Category 3<br>
+        </div>
+        <button type="submit">Scrape Data</button>
+    </form>
+
+    <!-- Chatbot Section -->
+    <h2>Chatbot</h2>
+    <div id="chatbox"></div>
+    <form id="chat-form">
+        <label for="category">Select Category:</label>
+        <select id="category" name="category" required>
+            <option value="" disabled selected>Choose a category</option>
+        </select>
+        <input type="text" id="query" name="query" placeholder="Ask a question..." required>
+        <button type="submit">Send</button>
+    </form>
+
+    <script>
+        const scrapeForm = document.getElementById("scrape-form");
+        const chatForm = document.getElementById("chat-form");
+        const chatbox = document.getElementById("chatbox");
+        const categorySelect = document.getElementById("category");
+
+        scrapeForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const url = document.getElementById("url").value;
+            const categories = Array.from(scrapeForm.querySelectorAll("input[name='categories']:checked")).map(
+                (checkbox) => checkbox.value
+            );
+
+            const response = await fetch("/scrape", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url, categories }),
+            });
+
+            const data = await response.json();
+            if (data.categories) {
+                // Populate category dropdown for chatbot
+                categorySelect.innerHTML = '<option value="" disabled selected>Choose a category</option>';
+                data.categories.forEach((cat) => {
+                    const option = document.createElement("option");
+                    option.value = cat;
+                    option.textContent = cat;
+                    categorySelect.appendChild(option);
+                });
+                alert("Data scraped successfully!");
+            } else {
+                alert(data.error || "An error occurred while scraping.");
+            }
+        });
+
+        chatForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const category = categorySelect.value;
+            const query = document.getElementById("query").value;
+
+            const response = await fetch("/chatbot", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ category, query }),
+            });
+
+            const data = await response.json();
+            chatbox.innerHTML += `<p><b>You:</b> ${query}</p><p><b>Chatbot:</b> ${data.response || data.error}</p>`;
+            chatForm.reset();
+        });
+    </script>
+</body>
+</html>
